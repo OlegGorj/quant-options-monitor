@@ -1,0 +1,17 @@
+
+on:
+  push:
+    branches:
+    - main
+    - release/*
+
+  workflow_dispatch:
+
+jobs:
+  setup:
+    name: deploy to eng
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Install Dependencies
+        run: |
+          echo ''

@@ -1,4 +1,4 @@
-from ib_insync import Index, Stock, Option
+from ib_insync import Index, Stock, Option, Future
 
 class SymbolTracker:
     """
@@ -7,15 +7,18 @@ class SymbolTracker:
     price = spy.get_price()
     opt = spy.build_option("20250419", 450, "C")
     """
-    def __init__(self, ib, symbol: str, exchange: str = 'SMART', sec_type: str = 'IND'):  # IND for index, STK for stock
+    def __init__(self, ib, symbol: str, exchange: str = 'SMART', sec_type: str = 'IND'):  # IND for index, STK for stock, ETF, FUT
         self.ib = ib
         self.symbol = symbol
         self.sec_type = sec_type.upper()
 
         if self.sec_type == 'IND':
             self.contract = Index(symbol, exchange)
-        elif self.sec_type == 'STK':
+        elif self.sec_type in ['STK', 'ETF']:
             self.contract = Stock(symbol, exchange, currency='USD')
+        elif self.sec_type == 'FUT':
+            # Simplified contract for futures; may need expansion
+            self.contract = Future(symbol=symbol, exchange=exchange, currency='USD')
         else:
             raise ValueError(f"Unsupported security type: {self.sec_type}")
 
@@ -32,4 +35,3 @@ class SymbolTracker:
 
     def build_option(self, expiry, strike, right):
         return Option(self.symbol, expiry, strike, right, 'SMART')
-

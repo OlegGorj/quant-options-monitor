@@ -23,7 +23,6 @@ pip3 install -r requirements.txt
 ## `IBClient` class
 
 Connecting to TWS or IB Gateway with IBClient
-
 ```python
 from service.ib_client import IBClient
 
@@ -39,10 +38,25 @@ print("Connected to IBKR:", ib.isConnected())
 Required Environment Variables
 
 ```bash
-IB_HOST=127.0.0.1         # Host where IB TWS or IB Gateway is running
-IB_PORT=7497              # Default port for paper trading (7496 for live)
-IB_CLIENT_ID=42           # Unique ID per client session
+IB_HOST=127.0.0.1
+IB_PORT=7497
+IB_CLIENT_ID=42
+IB_TIMEOUT=10
+IB_RETRIES=5
+IB_RETRY_DELAY=2
 ```
+
+### How It Works
+
+- `IBClient.__init__()` reads environment variables and stores them.
+- `IBClient.connect()` establishes a connection to TWS or `IB` Gateway and returns a live `IB` instance.
+- This IB instance is fully compatible with all `ib_insync` functionality, such as:
+    - Submitting orders
+    - Requesting market data
+    - Requesting option chains
+    - Managing portfolio positions
+- Reconnect logic: configurable number of retries (IB_RETRIES) and delay (IB_RETRY_DELAY).
+- Timeout control: via IB_TIMEOUT.
 
 
 ## `SymbolTracker` class

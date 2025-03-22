@@ -3,11 +3,12 @@ from datetime import datetime, timedelta
 import pandas as pd
 import time
 import logging
+import yaml
 
-from monitoring.models import OptionPosition
+from monitoring.models import OptionPosition, Portfolio
 from monitoring.monitor import OptionMonitor
 from alerting.alerts import AlertAssetEngine, AlertOptionEngine
-from config.config import AlertConfig
+from config.config import AlertConfig, InventoryLoader
 
 # Configure logging
 logging.basicConfig(
@@ -20,9 +21,8 @@ logging.basicConfig(
 )
 
 # Load inventory from config-specified file
-with open(config.inventory_file) as f:
-    inventory_data = json.load(f)
-inventory = [OptionPosition(**item) for item in inventory_data]
+portfolio = Portfolio(yaml.safe_load(open(config.inventory_file)))
+inventory = [option for group in portfolio.__root__.values() for strat in group.values() for option in strat.options]
 inventory_lookup = {pos.key(): pos for pos in inventory}
 
 # Connect
@@ -67,7 +67,6 @@ tickers = ib.reqMktData(contracts, '', True, False)
 # Initialize helpers
 monitor = OptionMonitor()
 config = AlertConfig()
-
 asset_alert_engine = AlertAssetEngine(low_threshold=config.low_threshold, high_threshold=config.high_threshold)
 option_alert_engine = AlertOptionEngine(
     delta_threshold=config.delta_threshold,
@@ -132,3 +131,4 @@ finally:
     df = pd.DataFrame(monitor.snapshot_log)
     df.to_csv("spx_monitoring_with_alerts.csv", index=False)
     logging.info("Saved logs to spx_monitoring_with_alerts.csv")
+

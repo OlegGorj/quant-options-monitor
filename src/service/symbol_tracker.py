@@ -29,9 +29,26 @@ class SymbolTracker:
         self.ib.sleep(1.5)
         return self.ticker.last or self.ticker.close
 
-    def get_option_chain(self):
-        chains = self.ib.reqSecDefOptParams(self.contract.symbol, '', self.contract.secType, self.contract.conId)
-        return chains[0] if chains else None
+    def get_option_chain(self, right_filter=None, expiry_range=None):
+        chains = self.ib.reqSecDefOptParams(
+            self.contract.symbol, '', self.contract.secType, self.contract.conId)
+        if not chains:
+            return None
+
+        chain = chains[0]
+
+        if right_filter:
+            chain.rights = [r for r in chain.rights if r in right_filter]
+
+        if expiry_range:
+            start_date, end_date = expiry_range
+            chain.expirations = {
+                exp for exp in chain.expirations
+                if start_date <= datetime.strptime(exp, "%Y%m%d").date() <= end_date
+            }
+
+        return chain
 
     def build_option(self, expiry, strike, right):
         return Option(self.symbol, expiry, strike, right, 'SMART')
+

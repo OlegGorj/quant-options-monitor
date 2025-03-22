@@ -17,14 +17,22 @@ class OptionPosition(BaseModel):
         key(): Returns a tuple of (symbol, expiry, strike, right) that uniquely
               identifies this option contract
     """
-
     symbol: str
     expiry: str
     strike: float
     right: str
-    quantity: int  # Positive for long, negative for short
+    quantity: int
     strategy: str = None
 
     def key(self):
         return (self.symbol, self.expiry, self.strike, self.right)
+
+
+class Strategy(BaseModel):
+    name: str
+    options: list[OptionPosition]
+
+
+class Portfolio(BaseModel):
+    __root__: dict[str, dict[str, Strategy]]
 

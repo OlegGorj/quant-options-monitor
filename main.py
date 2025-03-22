@@ -6,11 +6,12 @@ import logging
 
 from monitoring.models import OptionPosition
 from monitoring.monitor import OptionMonitor
-from alerting.alerts import AlertEngine
+from alerting.alerts import AlertAssetEngine, AlertOptionEngine
+from config.config import AlertConfig
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=getattr(logging, AlertConfig().logging_level.upper(), logging.INFO),
     format='%(asctime)s [%(levelname)s] %(message)s',
     handlers=[
         logging.FileHandler("spx_monitor.log"),
@@ -18,12 +19,10 @@ logging.basicConfig(
     ]
 )
 
-# Inventory Setup
-inventory = [
-    OptionPosition('SPX', '20250419', 5100, 'C', 1, strategy='Bull Call Spread'),
-    OptionPosition('SPX', '20250419', 5200, 'C', -1, strategy='Bull Call Spread'),
-    OptionPosition('SPX', '20250419', 4900, 'P', 1, strategy='Protective Put'),
-]
+# Load inventory from config-specified file
+with open(config.inventory_file) as f:
+    inventory_data = json.load(f)
+inventory = [OptionPosition(**item) for item in inventory_data]
 inventory_lookup = {pos.key(): pos for pos in inventory}
 
 # Connect
@@ -67,11 +66,19 @@ tickers = ib.reqMktData(contracts, '', True, False)
 
 # Initialize helpers
 monitor = OptionMonitor()
-alerter = AlertEngine(watched_strikes={5100, 5200, 5300})
+config = AlertConfig()
+
+asset_alert_engine = AlertAssetEngine(low_threshold=config.low_threshold, high_threshold=config.high_threshold)
+option_alert_engine = AlertOptionEngine(
+    delta_threshold=config.delta_threshold,
+    gamma_threshold=config.gamma_threshold,
+    theta_threshold=config.theta_threshold,
+    watched_strikes=config.watched_strikes
+)
 
 # Logging loop
 try:
-    logging.info("Logging every 15s with alert triggers (CTRL+C to exit)...")
+    logging.info(f"Logging every {config.polling_interval}s with alert triggers (CTRL+C to exit)...")
     while True:
         ib.sleep(1.5)
         underlying_price = spx_ticker.last or spx_ticker.close
@@ -110,12 +117,12 @@ try:
                 'strategy': strategy
             })
 
-            for alert in alerter.check_alerts(underlying_price, contract, greeks):
+            for alert in asset_alert_engine.check(underlying_price) + option_alert_engine.check(contract, greeks):
                 logging.warning(alert)
 
         monitor.snapshot_log.extend(snapshot)
         logging.info(f"[{timestamp}] Logged {len(snapshot)} entries")
-        time.sleep(15)
+        time.sleep(config.polling_interval)
 
 except KeyboardInterrupt:
     logging.info("Stopped by user.")
@@ -125,4 +132,3 @@ finally:
     df = pd.DataFrame(monitor.snapshot_log)
     df.to_csv("spx_monitoring_with_alerts.csv", index=False)
     logging.info("Saved logs to spx_monitoring_with_alerts.csv")
-

@@ -14,16 +14,6 @@ class AlertEngine(ABC):
     def check(self, *args, **kwargs):
         pass
 
-from abc import ABC, abstractmethod
-
-class AlertEngine(ABC):
-    def __init__(self):
-        self.alerts_triggered = set()
-
-    @abstractmethod
-    def check(self, *args, **kwargs):
-        pass
-
 
 class AlertAssetEngine(AlertEngine):
     def __init__(self, low_threshold=4500, high_threshold=5500):

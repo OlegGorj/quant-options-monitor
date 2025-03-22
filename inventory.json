@@ -1,0 +1,4 @@
+[
+    { "symbol": "SPX", "expiry": "20250419", "strike": 5100, "right": "C", "quantity": 1, "strategy": "Bull Call Spread" },
+    { "symbol": "SPX", "expiry": "20250419", "strike": 5200, "right": "C", "quantity": -1, "strategy": "Bull Call Spread" }
+]

@@ -4,9 +4,7 @@ from ib_insync import IB, ConnectionError
 import time
 
 class IBClient:
-    """
-    Class to manage connection to the Interactive Brokers API.
-    """
+    """Client wrapper for IB connection with retry, logging, and health check."""
     def __init__(self):
         self.host = os.getenv("IB_HOST", "127.0.0.1")
         self.port = int(os.getenv("IB_PORT", 7497))
@@ -31,7 +29,17 @@ class IBClient:
                 logging.warning(f"Connection attempt {attempt + 1} failed: {e}")
                 attempt += 1
                 time.sleep(self.retry_delay)
-                raise ConnectionError("Unable to connect to IB after multiple attempts.")
-            
+
+            raise ConnectionError("Unable to connect to IB after multiple attempts.")
+
+    def is_connected(self):
+        """Returns True if the IB client is currently connected."""
+        return self.ib.isConnected()
+
+    def ensure_connected(self):
+        """Reconnect if the connection is lost."""
+        if not self.is_connected():
+            logging.info("IB connection lost. Reconnecting...")
+            self.connect()
         self.ib.connect(self.host, self.port, clientId=self.client_id)
         return self.ib

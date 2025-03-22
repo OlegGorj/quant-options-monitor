@@ -4,6 +4,22 @@ class AlertEngine(ABC):
     def __init__(self):
         self.alerts_triggered = set()
 
+    def has_been_triggered(self, key):
+        return key in self.alerts_triggered
+
+    def mark_triggered(self, key):
+        self.alerts_triggered.add(key)
+
+    @abstractmethod
+    def check(self, *args, **kwargs):
+        pass
+
+from abc import ABC, abstractmethod
+
+class AlertEngine(ABC):
+    def __init__(self):
+        self.alerts_triggered = set()
+
     @abstractmethod
     def check(self, *args, **kwargs):
         pass
@@ -28,19 +44,33 @@ class AlertAssetEngine(AlertEngine):
 
 
 class AlertOptionEngine(AlertEngine):
-    def __init__(self, delta_threshold=0.5, watched_strikes=None):
+    def __init__(self, delta_threshold=0.5, gamma_threshold=None, theta_threshold=None, watched_strikes=None):
         self.delta_threshold = delta_threshold
+        self.gamma_threshold = gamma_threshold
+        self.theta_threshold = theta_threshold
         self.watched_strikes = watched_strikes or set()
         self.alerts_triggered = set()
 
     def check(self, contract, greeks):
         alerts = []
-        if contract.strike in self.watched_strikes and greeks and greeks.delta is not None:
-            if greeks.delta > self.delta_threshold:
-                key = (contract.lastTradeDateOrContractMonth, contract.right, contract.strike, 'delta')
-                if key not in self.alerts_triggered:
-                    self.alerts_triggered.add(key)
-                    alerts.append(f"⚠️ {contract.right} {contract.strike} delta crossed {self.delta_threshold}: {greeks.delta:.2f}")
+        if contract.strike not in self.watched_strikes or not greeks:
+            return alerts
+        
+        if greeks.delta is not None and greeks.delta > self.delta_threshold:
+            key = (contract.lastTradeDateOrContractMonth, contract.right, contract.strike, 'delta')
+            if not self.has_been_triggered(key):
+                self.mark_triggered(key)
+                alerts.append(f"⚠️ {contract.right} {contract.strike} delta crossed {self.delta_threshold}: {greeks.delta:.2f}")
+
+        if self.gamma_threshold is not None and greeks.gamma is not None and greeks.gamma > self.gamma_threshold:
+            key = (contract.lastTradeDateOrContractMonth, contract.right, contract.strike, 'gamma')
+            if not self.has_been_triggered(key):
+                self.mark_triggered(key)
+                alerts.append(f"⚠️ {contract.right} {contract.strike} gamma crossed {self.gamma_threshold}: {greeks.gamma:.2f}")
+
+        if self.theta_threshold is not None and greeks.theta is not None and greeks.theta < self.theta_threshold:
+            key = (contract.lastTradeDateOrContractMonth, contract.right, contract.strike, 'theta')
+            if not self.has_been_triggered(key):
+                self.mark_triggered(key)
+                alerts.append(f"⚠️ {contract.right} {contract.strike} theta dropped below {self.theta_threshold}: {greeks.theta:.2f}")
         return alerts
-    
-    

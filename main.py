@@ -10,6 +10,7 @@ from monitoring.monitor import OptionMonitor
 from alerting.alerts import AlertAssetEngine, AlertOptionEngine
 from config.config import AlertConfig, InventoryLoader
 from service.ib_client import IBClient
+from service.symbol_tracker import SymbolTracker
 
 # Configure logging
 logging.basicConfig(
@@ -41,13 +42,9 @@ ib_client = IBClient()
 ib = ib_client.connect()
 
 # Setup SPX index
-spx_index = Index('SPX', 'CBOE')
-ib.qualifyContracts(spx_index)
-spx_ticker = ib.reqMktData(spx_index, '', False, False)
-
-# Get option chain
-chains = ib.reqSecDefOptParams(spx_index.symbol, '', spx_index.secType, spx_index.conId)
-chain = chains[0]
+spx = SymbolTracker(ib, 'SPX')
+underlying_price = spx.get_price()
+chain = spx.get_option_chain()
 
 # Filter expirations (0-60 days)
 today = datetime.now().date()
@@ -129,7 +126,7 @@ except KeyboardInterrupt:
 
 finally:
     ib.disconnect()
-    df = pd.DataFrame(monitor.snapshot_log)
-    df.to_csv("spx_monitoring_with_alerts.csv", index=False)
+    # df = pd.DataFrame(monitor.snapshot_log)
+    # df.to_csv("spx_monitoring_with_alerts.csv", index=False)
     logging.info("Saved logs to spx_monitoring_with_alerts.csv")
 

@@ -9,6 +9,7 @@ from monitoring.models import OptionPosition, Portfolio
 from monitoring.monitor import OptionMonitor
 from alerting.alerts import AlertAssetEngine, AlertOptionEngine
 from config.config import AlertConfig, InventoryLoader
+from service.ib_client import IBClient
 
 # Configure logging
 logging.basicConfig(
@@ -19,6 +20,16 @@ logging.basicConfig(
         logging.StreamHandler()
     ]
 )
+# Initialize helpers
+monitor = OptionMonitor()
+config = AlertConfig()
+asset_alert_engine = AlertAssetEngine(low_threshold=config.low_threshold, high_threshold=config.high_threshold)
+option_alert_engine = AlertOptionEngine(
+    delta_threshold=config.delta_threshold,
+    gamma_threshold=config.gamma_threshold,
+    theta_threshold=config.theta_threshold,
+    watched_strikes=config.watched_strikes
+)
 
 # Load inventory from config-specified file
 portfolio = Portfolio(yaml.safe_load(open(config.inventory_file)))
@@ -26,8 +37,8 @@ inventory = [option for group in portfolio.__root__.values() for strat in group.
 inventory_lookup = {pos.key(): pos for pos in inventory}
 
 # Connect
-ib = IB()
-ib.connect('127.0.0.1', 7497, clientId=123)
+ib_client = IBClient()
+ib = ib_client.connect()
 
 # Setup SPX index
 spx_index = Index('SPX', 'CBOE')
@@ -64,16 +75,6 @@ for pos in inventory:
 ib.qualifyContracts(*contracts)
 tickers = ib.reqMktData(contracts, '', True, False)
 
-# Initialize helpers
-monitor = OptionMonitor()
-config = AlertConfig()
-asset_alert_engine = AlertAssetEngine(low_threshold=config.low_threshold, high_threshold=config.high_threshold)
-option_alert_engine = AlertOptionEngine(
-    delta_threshold=config.delta_threshold,
-    gamma_threshold=config.gamma_threshold,
-    theta_threshold=config.theta_threshold,
-    watched_strikes=config.watched_strikes
-)
 
 # Logging loop
 try:

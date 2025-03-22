@@ -140,4 +140,3 @@ finally:
     df = pd.DataFrame(snapshot_log)
     df.to_csv("spx_monitoring_with_alerts.csv", index=False)
     print("Saved logs to spx_monitoring_with_alerts.csv")
-

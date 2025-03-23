@@ -1,14 +1,15 @@
 import os
 import logging
-from ib_insync import IB, ConnectionError
+from ib_insync import IB
 import time
+
 
 class IBClient:
     """Client wrapper for IB connection with retry, logging, and health check."""
     def __init__(self):
         self.host = os.getenv("IB_HOST", "127.0.0.1")
-        self.port = int(os.getenv("IB_PORT", 7497))
-        self.client_id = int(os.getenv("IB_CLIENT_ID", 123))
+        self.port = int(os.getenv("IB_PORT", 4001)) # 7497 for TWS, 4002 for IB Gateway 
+        self.client_id = int(os.getenv("IB_CLIENT_ID", 12345678))
         self.timeout = int(os.getenv("IB_TIMEOUT", 10))  # seconds
         self.max_retries = int(os.getenv("IB_RETRIES", 3))
         self.retry_delay = int(os.getenv("IB_RETRY_DELAY", 3))  # seconds

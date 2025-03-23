@@ -5,19 +5,20 @@ import time
 import logging
 import yaml
 
-from monitoring.models import OptionPosition, Portfolio
-from monitoring.monitor import OptionMonitor
-from alerting.alerts import AlertAssetEngine, AlertOptionEngine
-from config.config import AlertConfig, InventoryLoader
-from service.ib_client import IBClient
-from service.symbol_tracker import SymbolTracker
+from src.model.models import OptionPosition, Portfolio
+from src.monitoring.monitor import OptionMonitor
+from src.alerting.alerts import AlertAssetEngine, AlertOptionEngine
+from src.config.config import AlertConfig
+from src.loader.inventory_loader import InventoryLoader
+from src.client.ib_client import IBClient
+from src.service.symbol_tracker import SymbolTracker
 
 # Configure logging
 logging.basicConfig(
     level=getattr(logging, AlertConfig().logging_level.upper(), logging.INFO),
     format='%(asctime)s [%(levelname)s] %(message)s',
     handlers=[
-        logging.FileHandler("spx_monitor.log"),
+        logging.FileHandler("monitor.log"),
         logging.StreamHandler()
     ]
 )
@@ -35,8 +36,16 @@ option_alert_engine = AlertOptionEngine(
 
 # Load inventory from config-specified file
 portfolio = Portfolio(yaml.safe_load(open(config.inventory_file)))
-inventory = [option for group in portfolio.__root__.values() for strat in group.values() for option in strat.options]
+print(f'loaded portfolio: {portfolio}')
+inventory = [option for strat in portfolio.root.values() if strat and hasattr(strat, 'options') for option in strat.options]
+print(f'loaded inventory: {inventory}')
 inventory_lookup = {pos.key(): pos for pos in inventory}
+print(f'loaded inventory lookup: {inventory_lookup}')
+print(f"Loaded {len(inventory)} positions from {config.inventory_file}")
+
+# inventory = [option for strat in portfolio.strategies if strat and hasattr(strat, 'options') for option in strat.options]
+# inventory_lookup = {pos.key(): pos for pos in inventory}
+# print(f"Loaded {len(inventory)} positions from {config.inventory_file}")
 
 # Connect
 ib_client = IBClient()
@@ -45,14 +54,17 @@ ib = ib_client.connect()
 # Setup SPX index
 spx = SymbolTracker(ib, 'SPX')
 underlying_price = spx.get_price()
+print(f'Underlying price: {underlying_price}')
 chain = spx.get_option_chain()
+print(f'Option chain: {chain}')
+
 
 # Filter expirations (0-60 days)
-today = datetime.now().date()
-valid_expirations = [
-    exp for exp in chain.expirations
-    if 0 <= (datetime.strptime(exp, '%Y%m%d').date() - today).days <= 60
-]
+# today = datetime.now().date()
+# valid_expirations = [
+#     exp for exp in chain.expirations
+#     if 0 <= (datetime.strptime(exp, '%Y%m%d').date() - today).days <= 60
+# ]
 
 # Determine OTM strikes
 ib.sleep(2)
@@ -61,17 +73,17 @@ ib.sleep(2)
 # otm_puts = [strike for strike in chain.strikes if strike < underlying_price]
 
 # Prepare contracts
-contracts = []
-for exp in valid_expirations:
-    for strike in otm_calls:
-        contracts.append(Option('SPX', exp, strike, 'C', 'SMART'))
-    for strike in otm_puts:
-        contracts.append(Option('SPX', exp, strike, 'P', 'SMART'))
-for pos in inventory:
-    contracts.append(Option(pos.symbol, pos.expiry, pos.strike, pos.right, 'SMART'))
+# contracts = []
+# for exp in valid_expirations:
+#     for strike in otm_calls:
+#         contracts.append(Option('SPX', exp, strike, 'C', 'SMART'))
+#     for strike in otm_puts:
+#         contracts.append(Option('SPX', exp, strike, 'P', 'SMART'))
+# for pos in inventory:
+#     contracts.append(Option(pos.symbol, pos.expiry, pos.strike, pos.right, 'SMART'))
 
-ib.qualifyContracts(*contracts)
-tickers = ib.reqMktData(contracts, '', True, False)
+# ib.qualifyContracts(*contracts)
+# tickers = ib.reqMktData(contracts, '', True, False)
 
 
 # Logging loop

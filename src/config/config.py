@@ -1,12 +1,14 @@
-import json
 from pathlib import Path
-from pydantic import BaseSettings
-from typing import Set, Optional
+from typing import Optional, Set
+import yaml
+from pydantic_settings import BaseSettings
+from pydantic import field_validator, BaseModel
 
-class AlertConfig(BaseSettings):
+
+class AlertConfig(BaseModel):
     logging_level: str = 'INFO'
     polling_interval: int = 15
-    inventory_file: str = 'inventory.json'
+    inventory_file: str = 'inventory.yaml'
     low_threshold: float = 4500
     high_threshold: float = 5500
     delta_threshold: float = 0.5
@@ -16,3 +18,11 @@ class AlertConfig(BaseSettings):
 
     class Config:
         env_file = ".env"
+        env_file_encoding = 'utf-8'
+
+    @field_validator('watched_strikes', mode='before')
+    def parse_watched_strikes(cls, v):
+        if isinstance(v, str):
+            return {int(x.strip()) for x in v.split(',')}
+        return v
+

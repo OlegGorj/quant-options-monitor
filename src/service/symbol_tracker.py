@@ -1,6 +1,7 @@
 from datetime import datetime
 from ib_insync import Index, Stock, Option, Future, FuturesOption as FOP
 
+
 class SymbolTracker:
     """
     A generic tracker for underlying instruments supporting indexes, equities, ETFs, futures, and their options (including FOPs).
@@ -49,7 +50,6 @@ class SymbolTracker:
 
         return chain
 
-
     def build_option(self, expiry, strike, right):
         """
         Build an option contract for the given expiry, strike, and right.
@@ -74,30 +74,3 @@ class SymbolTracker:
                 currency='USD'
             )
     
-    def get_price(self):
-        self.ib.sleep(1.5)
-        return self.ticker.last or self.ticker.close
-
-    def get_option_chain(self, right_filter=None, expiry_range=None):
-        chains = self.ib.reqSecDefOptParams(
-            self.contract.symbol, '', self.contract.secType, self.contract.conId)
-        if not chains:
-            return None
-
-        chain = chains[0]
-
-        if right_filter:
-            chain.rights = [r for r in chain.rights if r in right_filter]
-
-        if expiry_range:
-            start_date, end_date = expiry_range
-            chain.expirations = {
-                exp for exp in chain.expirations
-                if start_date <= datetime.strptime(exp, "%Y%m%d").date() <= end_date
-            }
-
-        return chain
-
-    def build_option(self, expiry, strike, right):
-        return Option(self.symbol, expiry, strike, right, 'SMART')
-

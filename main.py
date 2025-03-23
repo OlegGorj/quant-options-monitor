@@ -21,6 +21,7 @@ logging.basicConfig(
         logging.StreamHandler()
     ]
 )
+
 # Initialize helpers
 monitor = OptionMonitor()
 config = AlertConfig()
@@ -55,9 +56,9 @@ valid_expirations = [
 
 # Determine OTM strikes
 ib.sleep(2)
-underlying_price = spx_ticker.last or spx_ticker.close
-otm_calls = [strike for strike in chain.strikes if strike > underlying_price]
-otm_puts = [strike for strike in chain.strikes if strike < underlying_price]
+# underlying_price = spx_ticker.last or spx_ticker.close
+# otm_calls = [strike for strike in chain.strikes if strike > underlying_price]
+# otm_puts = [strike for strike in chain.strikes if strike < underlying_price]
 
 # Prepare contracts
 contracts = []
@@ -74,59 +75,59 @@ tickers = ib.reqMktData(contracts, '', True, False)
 
 
 # Logging loop
-try:
-    logging.info(f"Logging every {config.polling_interval}s with alert triggers (CTRL+C to exit)...")
-    while True:
-        ib.sleep(1.5)
-        underlying_price = spx_ticker.last or spx_ticker.close
-        timestamp = datetime.now().isoformat()
-        snapshot = []
+# try:
+#     logging.info(f"Logging every {config.polling_interval}s with alert triggers (CTRL+C to exit)...")
+#     while True:
+#         ib.sleep(1.5)
+#         underlying_price = spx_ticker.last or spx_ticker.close
+#         timestamp = datetime.now().isoformat()
+#         snapshot = []
 
-        for ticker in tickers:
-            contract = ticker.contract
-            greeks = ticker.modelGreeks
-            iv = greeks.impliedVol if greeks else None
-            key = (contract.lastTradeDateOrContractMonth, contract.right, contract.strike)
+#         for ticker in tickers:
+#             contract = ticker.contract
+#             greeks = ticker.modelGreeks
+#             iv = greeks.impliedVol if greeks else None
+#             key = (contract.lastTradeDateOrContractMonth, contract.right, contract.strike)
 
-            if iv:
-                monitor.iv_history[key].append(iv)
-                monitor.iv_history[key] = monitor.iv_history[key][-50:]
+#             if iv:
+#                 monitor.iv_history[key].append(iv)
+#                 monitor.iv_history[key] = monitor.iv_history[key][-50:]
 
-            iv_z = monitor.get_iv_zscore(monitor.iv_history[key], iv)
+#             iv_z = monitor.get_iv_zscore(monitor.iv_history[key], iv)
 
-            position = inventory_lookup.get((contract.symbol, contract.lastTradeDateOrContractMonth, contract.strike, contract.right))
-            strategy = position.strategy if position else None
-            quantity = position.quantity if position else 0
+#             position = inventory_lookup.get((contract.symbol, contract.lastTradeDateOrContractMonth, contract.strike, contract.right))
+#             strategy = position.strategy if position else None
+#             quantity = position.quantity if position else 0
 
-            snapshot.append({
-                'timestamp': timestamp,
-                'expiration': contract.lastTradeDateOrContractMonth,
-                'right': contract.right,
-                'strike': contract.strike,
-                'bid': ticker.bid,
-                'ask': ticker.ask,
-                'last': ticker.last,
-                'delta': greeks.delta if greeks else None,
-                'theta': greeks.theta if greeks else None,
-                'iv': iv,
-                'iv_zscore': iv_z,
-                'quantity': quantity,
-                'strategy': strategy
-            })
+#             snapshot.append({
+#                 'timestamp': timestamp,
+#                 'expiration': contract.lastTradeDateOrContractMonth,
+#                 'right': contract.right,
+#                 'strike': contract.strike,
+#                 'bid': ticker.bid,
+#                 'ask': ticker.ask,
+#                 'last': ticker.last,
+#                 'delta': greeks.delta if greeks else None,
+#                 'theta': greeks.theta if greeks else None,
+#                 'iv': iv,
+#                 'iv_zscore': iv_z,
+#                 'quantity': quantity,
+#                 'strategy': strategy
+#             })
 
-            for alert in asset_alert_engine.check(underlying_price) + option_alert_engine.check(contract, greeks):
-                logging.warning(alert)
+#             for alert in asset_alert_engine.check(underlying_price) + option_alert_engine.check(contract, greeks):
+#                 logging.warning(alert)
 
-        monitor.snapshot_log.extend(snapshot)
-        logging.info(f"[{timestamp}] Logged {len(snapshot)} entries")
-        time.sleep(config.polling_interval)
+#         monitor.snapshot_log.extend(snapshot)
+#         logging.info(f"[{timestamp}] Logged {len(snapshot)} entries")
+#         time.sleep(config.polling_interval)
 
-except KeyboardInterrupt:
-    logging.info("Stopped by user.")
+# except KeyboardInterrupt:
+#     logging.info("Stopped by user.")
 
-finally:
-    ib.disconnect()
-    # df = pd.DataFrame(monitor.snapshot_log)
-    # df.to_csv("spx_monitoring_with_alerts.csv", index=False)
-    logging.info("Saved logs to spx_monitoring_with_alerts.csv")
+# finally:
+#     ib.disconnect()
+#     # df = pd.DataFrame(monitor.snapshot_log)
+#     # df.to_csv("spx_monitoring_with_alerts.csv", index=False)
+#     logging.info("Saved logs to spx_monitoring_with_alerts.csv")
 

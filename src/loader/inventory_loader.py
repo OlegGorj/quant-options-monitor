@@ -7,18 +7,13 @@ from src.model.models import OptionPosition, Portfolio
 
 class InventoryLoader:
     @staticmethod
-    def load(path: str) -> list[OptionPosition]:
-        ext = Path(path).suffix.lower()
-        with open(path) as f:
-            if ext == '.json':
-                raw = json.load(f)
-            elif ext in ['.yml', '.yaml']:
-                raw = yaml.safe_load(f)
-            else:
-                raise ValueError(f"Unsupported inventory file type: {ext}")
-        return [OptionPosition(**item) for item in raw]
-
-
+    def load(portfolio: Portfolio) -> list[OptionPosition]:
+        inventory = []
+        for strategies in portfolio.root.values():
+            for strategy in strategies.strategies:
+                for option in strategy.options:
+                    inventory.append(option)
+        return inventory
 
     logging_level: str = 'INFO'
     polling_interval: int = 15

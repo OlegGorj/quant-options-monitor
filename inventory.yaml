@@ -1,35 +1,61 @@
 SPX:
-  strategy: 
-    name: "SPX Bull Call Spread with expiry date Apr 19 2025"
-    options:
-    - symbol: SPX
-      expiry: "20250419"
-      strike: 5100
-      right: C
-      quantity: 1
-      strategy: Bull Call Spread
-    - symbol: SPX
-      expiry: "20250419"
-      strike: 5200
-      right: C
-      quantity: -1
-      strategy: Bull Call Spread
+  strategies: 
+    - name: "SPX Bull Call Spread with expiry date Apr 19 2025"
+      options:
+      - symbol: SPX
+        expiry: "20250419"
+        strike: 5100
+        right: C
+        quantity: 1
+        strategy: Bull Call Spread
+      - symbol: SPX
+        expiry: "20250419"
+        strike: 5200
+        right: C
+        quantity: -1
+        strategy: Bull Call Spread
 
 RUT:
-  strategy: 
-    name: "RUT Bear Put Spread with expiry date Apr 19 2025"
-    options:
-    - symbol: RUT
-      expiry: "20250419"
-      strike: 5100
-      right: P
-      quantity: 1
-      strategy: Bear Put Spread
-    - symbol: RUT
-      expiry: "20250419"
-      strike: 5000
-      right: P
-      quantity: -1
-      strategy: Bear Put Spread
-  
+  strategies: 
+    - name: "RUT Bear Put Spread with expiry date Apr 19 2025"
+      options:
+      - symbol: RUT
+        expiry: "20250419"
+        strike: 5100
+        right: P
+        quantity: 1
+        strategy: Bear Put Spread
+      - symbol: RUT
+        expiry: "20250419"
+        strike: 5000
+        right: P
+        quantity: -1
+        strategy: Bear Put Spread
+    - name: "RUT Iron Condor with expiry date Apr 19 2025"
+      options:
+      - symbol: RUT
+        expiry: "20250419"
+        strike: 5100
+        right: C
+        quantity: 1
+        strategy: Iron Condor
+      - symbol: RUT
+        expiry: "20250419"
+        strike: 5000
+        right: C
+        quantity: -1
+        strategy: Iron Condor
+      - symbol: RUT
+        expiry: "20250419"
+        strike: 5100
+        right: P
+        quantity: 1
+        strategy: Iron Condor
+      - symbol: RUT
+        expiry: "20250419"
+        strike: 5000
+        right: P
+        quantity: -1
+        strategy: Iron Condor
+        
   

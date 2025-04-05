@@ -35,28 +35,36 @@ option_alert_engine = AlertOptionEngine(
 )
 
 # Load inventory from config-specified file
-portfolio = Portfolio(yaml.safe_load(open(config.inventory_file)))
-print(f'loaded portfolio: {portfolio}')
-inventory = [option for strat in portfolio.root.values() if strat and hasattr(strat, 'options') for option in strat.options]
-print(f'loaded inventory: {inventory}')
-inventory_lookup = {pos.key(): pos for pos in inventory}
-print(f'loaded inventory lookup: {inventory_lookup}')
-print(f"Loaded {len(inventory)} positions from {config.inventory_file}")
+portfolio = Portfolio(**yaml.safe_load(open(config.inventory_file)))
+print(f'>> loaded portfolio: {type(portfolio)}/{portfolio}')
 
-# inventory = [option for strat in portfolio.strategies if strat and hasattr(strat, 'options') for option in strat.options]
-# inventory_lookup = {pos.key(): pos for pos in inventory}
-# print(f"Loaded {len(inventory)} positions from {config.inventory_file}")
+for instrument in portfolio.root:
+    print(f'>>> loaded instrument: {instrument}')
+
+for strategies in portfolio.root.values():
+    print(f'>>> loaded strategies: {type(strategies)}/{strategies}')
+    for strategy in strategies.strategies:
+        print(f'>>>> loaded strategy: {type(strategy)}/{strategy}')
+        for option in strategy.options:
+            print(f'>>>>> loaded option: {type(option)}/{option}')
+
+inventory = InventoryLoader().load(portfolio)
+print(f'>> loaded inventory: {type(inventory)}/{inventory}')
 
 # Connect
 ib_client = IBClient()
 ib = ib_client.connect()
 
+tsla_contract = Stock('TSLA', 'SMART', 'USD')
+tsla_data = ib.reqMktData(tsla_contract)
+print(f'>> TSLA data: {tsla_data}')
+
 # Setup SPX index
-spx = SymbolTracker(ib, 'SPX')
-underlying_price = spx.get_price()
-print(f'Underlying price: {underlying_price}')
-chain = spx.get_option_chain()
-print(f'Option chain: {chain}')
+# spx = SymbolTracker(ib, 'SPX')
+# underlying_price = spx.get_price()
+# print(f'Underlying price: {underlying_price}')
+# chain = spx.get_option_chain()
+# print(f'Option chain: {chain}')
 
 
 # Filter expirations (0-60 days)
@@ -67,7 +75,7 @@ print(f'Option chain: {chain}')
 # ]
 
 # Determine OTM strikes
-ib.sleep(2)
+# ib.sleep(2)
 # underlying_price = spx_ticker.last or spx_ticker.close
 # otm_calls = [strike for strike in chain.strikes if strike > underlying_price]
 # otm_puts = [strike for strike in chain.strikes if strike < underlying_price]
